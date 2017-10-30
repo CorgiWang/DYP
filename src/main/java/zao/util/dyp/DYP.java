@@ -24,16 +24,16 @@ public class DYP {
 			"-f best",
 			"-f bestvideo+bestaudio --merge-output-format mkv"
 	};
-	static final Set<String> theBadTitles = new HashSet<>(List.of("[Deleted video]", "Private video"));
+	static final Set<String> theBadTitles = new HashSet<>(List.of("[Deleted video]", "[Private video]"));
 
 	private static int MX;
 	static File theRepoDir;
 	private static File theTasksFile;
 	private static File theExVideoIDsFile;
 
-	static Set<String> theExVideoIDs = null;
-	static List<PlaylistTask> thePlaylistTasks = null;
+	private static List<PlaylistTask> thePlaylistTasks = null;
 	static List<VideoTask> theVideoTasks = null;
+	static Set<String> theExVideoIDs = null;
 
 	private static String readTextFile(File file, String charSet) throws IOException {
 		FileInputStream fis = new FileInputStream(file);
@@ -78,7 +78,7 @@ public class DYP {
 		MX = (N < 1) ? 4 : Integer.valueOf(args[0]);
 		theRepoDir = new File((N < 2) ? "D:/_Stream/_from YouTube/" : args[1]);
 		theTasksFile = new File(theRepoDir, "tasks.json");
-		theExVideoIDsFile = new File(theRepoDir, "videoIDs.txt");
+		theExVideoIDsFile = new File(theRepoDir, "videoIDs");
 	}
 
 	private static void updateExVideoIDs() throws IOException {
