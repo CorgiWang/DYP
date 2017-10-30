@@ -21,9 +21,10 @@ public class DYP {
 	static final String theSubtitlePart = "--write-sub --sub-lang zh-CN,zh-TW,en";
 	static final String[] theFormatParts = {
 			"",
-			"-f beast",
+			"-f best",
 			"-f bestvideo+bestaudio --merge-output-format mkv"
 	};
+	static final Set<String> theBadTitles = new HashSet<>(List.of("[Deleted video]", "Private video"));
 
 	private static int MX;
 	static File theRepoDir;
@@ -31,7 +32,7 @@ public class DYP {
 	private static File theExVideoIDsFile;
 
 	static Set<String> theExVideoIDs = null;
-	private static List<PlaylistTask> thePlaylistTasks = null;
+	static List<PlaylistTask> thePlaylistTasks = null;
 	static List<VideoTask> theVideoTasks = null;
 
 	private static String readTextFile(File file, String charSet) throws IOException {
@@ -66,9 +67,9 @@ public class DYP {
 		return ans;
 	}
 
-	private static void runTasks(List tasks, int mx, int minutes) throws InterruptedException {
+	private static void runTasks(List tasks, int mx, int timeoutSecs) throws InterruptedException {
 		ExecutorService pool = Executors.newFixedThreadPool(mx);
-		pool.invokeAll(tasks, minutes, TimeUnit.MINUTES);
+		pool.invokeAll(tasks, timeoutSecs, TimeUnit.SECONDS);
 		pool.shutdownNow();
 	}
 
@@ -108,16 +109,14 @@ public class DYP {
 		while (!done) {
 			//	获取 theVideoTasks
 			theVideoTasks = new ArrayList<>();
-			runTasks(thePlaylistTasks, MX, 1);
+			runTasks(thePlaylistTasks, MX, 60);
 			done = theVideoTasks.isEmpty();
 
-			if (!done) {
-				//	下载视频
-				runTasks(theVideoTasks, MX, 10);
+			//	下载视频
+			runTasks(theVideoTasks, MX, 600);
 
-				//	更新 theExVideoIDsFile
-				updateExVideoIDs();
-			}
+			//	更新 theExVideoIDsFile
+			updateExVideoIDs();
 		}
 	}
 }
