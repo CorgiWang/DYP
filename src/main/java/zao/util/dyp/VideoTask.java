@@ -16,7 +16,8 @@ public class VideoTask implements Callable {
 		String formatPart = theFormatParts[format];
 		String orderPart = (idx == 0) ? "" : String.format("%03d｜", idx);
 		String datePart = withDate ? "%(upload_date)s｜" : "";
-		String outputPart = String.format("-o \"%s/%s%s%s.%%(ext)s\"", dirPath, orderPart, datePart, title);
+		String titlePart = title.replaceAll("/", "_");
+		String outputPart = String.format("-o \"%s/%s%s%s.%%(ext)s\"", dirPath, orderPart, datePart, titlePart);
 		URL url = new URL("https://www.youtube.com/watch?v=" + id);
 		cl = String.format("%s %s %s \"%s\" %s %s", theCommand, theProxyPart, theSubtitlePart, url, formatPart, outputPart);
 	}
@@ -25,8 +26,6 @@ public class VideoTask implements Callable {
 	@Override
 	public Object call() throws Exception {
 		String[] res = runCL(cl, "GBK");
-//		System.out.println(" 0 ---> " + res[0]);
-//		System.out.println(" 1 ---> " + res[1]);
 		synchronized (theVideoTasks) {
 			theExVideoIDs.add(id);
 		}
