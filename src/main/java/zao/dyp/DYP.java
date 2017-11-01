@@ -25,7 +25,7 @@ public class DYP {
 	private static void init(String[] args) throws IOException {
 		int mx = (args.length < 1) ? 4 : Integer.valueOf(args[0]);
 		theRepoDir = new File((args.length < 2) ? "D:/_Stream/_from YouTube/" : args[1]);
-		theVideos = new Stage<>(mx, 300, Video.class, Set.class);
+		theVideos = new Stage<>(mx, 900, Video.class, Set.class);
 		thePlaylists = new Stage<>(mx, 60, Playlist.class, Set.class);
 	}
 
