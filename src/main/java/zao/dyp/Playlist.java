@@ -6,15 +6,21 @@ class Playlist extends Job {
 
 	private static final JsonParser theJsonParser = new JsonParser();
 
-	private String dirName;
-	private int formatIndex;
-	private char orderSign;
-	private boolean withDate;
+	String dirPath;
+	Integer formatIndex;
+	Character orderSign;
+	Boolean withDate;
+
+	public Playlist(String id) {
+		super(id);
+	}
 
 	@Override
 	public String call() throws Exception {
 		return null;
 	}
+
+
 }
 
 

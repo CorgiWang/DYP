@@ -3,7 +3,12 @@ package zao.dyp;
 import java.util.concurrent.Callable;
 
 abstract class Job implements Callable<String> {
-	private  String id;
+
+	private String id;
+
+	Job(String id) {
+		this.id = id;
+	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -16,5 +21,10 @@ abstract class Job implements Callable<String> {
 	@Override
 	public int hashCode() {
 		return id.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return id;
 	}
 }
