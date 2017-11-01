@@ -16,28 +16,32 @@ import static zao.dyp.DYP.writeTextFile;
 
 class Stage<T extends Job> {
 
-	private static final Gson theGson = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson theGson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
-	private Integer MX;
-	private Integer timeout;
-	private File jsonFile;
-	private Collection<T> jobs;
+	private final Integer MX;
+	private final Integer timeout;
+	private final File jsonFile;
+	Collection<T> jobs;
 
 	Stage(int mx, int t, Class<T> jobType, Class<? extends Collection> colType) throws IOException {
 		MX = mx;
 		timeout = t;
+
+		File file = null;
 		String jobTypeName = jobType.getSimpleName();
 		switch (jobTypeName) {
 			case "Playlist":
 			case "Video":
-				jsonFile = new File(theRepoDir, jobTypeName + "s.json");
-				if (!jsonFile.exists()) {
-					writeTextFile("[]", jsonFile, "UTF-8");
+				file = new File(theRepoDir, jobTypeName + "s.json");
+				if (!file.exists()) {
+					writeTextFile("[]", file, "UTF-8");
 				}
 				break;
 			default:
 				System.out.println("Wrong Job Type: " + jobTypeName);
 		}
+
+		jsonFile = file;
 		jobs = getJobs(jobType, colType);
 	}
 
@@ -64,10 +68,18 @@ class Stage<T extends Job> {
 		return ans;
 	}
 
-	void runJobs() throws InterruptedException {
+	boolean runJobs() throws InterruptedException {
 		ExecutorService pool = Executors.newFixedThreadPool(MX);
 		pool.invokeAll(jobs, timeout, TimeUnit.SECONDS);
+		boolean ans = pool.isTerminated();
 		pool.shutdownNow();
+		return ans;
+	}
+
+	void writeBack() throws IOException {
+
+		String json = theGson.toJson(jobs);
+		writeTextFile(json, jsonFile, "UTF-8");
 	}
 }
 

@@ -6,10 +6,8 @@ import java.util.*;
 public class DYP {
 
 	static File theRepoDir = null;
-
-	private static Stage<Playlist> thePlaylists = null;
-	private static Stage<Video> theVideos = null;
-
+	static Stage<Video> theVideos = null;
+	static Stage<Playlist> thePlaylists = null;
 
 	static String readTextFile(File textFile, String cs) throws IOException {
 		FileInputStream fis = new FileInputStream(textFile);
@@ -27,13 +25,16 @@ public class DYP {
 	private static void init(String[] args) throws IOException {
 		int mx = (args.length < 1) ? 4 : Integer.valueOf(args[0]);
 		theRepoDir = new File((args.length < 2) ? "D:/_Stream/_from YouTube/" : args[1]);
+		theVideos = new Stage<>(mx, 300, Video.class, Set.class);
 		thePlaylists = new Stage<>(mx, 60, Playlist.class, Set.class);
-		theVideos = new Stage<>(mx, 60, Video.class, Set.class);
 	}
 
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		init(args);
 
+		thePlaylists.runJobs();
+//		theVideos.runJobs();
+		theVideos.writeBack();
 	}
 }

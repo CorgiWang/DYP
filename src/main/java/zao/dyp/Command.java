@@ -4,16 +4,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
+
+import static zao.dyp.DYP.theRepoDir;
 
 class Command {
 
 	private static final Runtime theRT = Runtime.getRuntime();
-	private static final Charset theCS = Charset.defaultCharset();
+	private static final String theCS = "GBK";
 
-	private static final String theCommand = "youtube-dl.exe";
-	private static final String theProxyPart = "--proxy localhost:1080";
-	private static final String theSubtitlePart = "--write-subs --sub-lang zh-CN,zh-TW,en --embed-subs";
+	private static final String theBasicCmd = "youtube-dl.exe --proxy localhost:1080";
+	private static final String thePlaylistCmd = theBasicCmd + " --flat-playlist -J";
+	private static final String theVideoCmd = theBasicCmd + " --no-part --write-sub --sub-lang zh-CN,zh-TW,en --embed-subs";
 	private static final String[] theFormatParts = {
 			"",
 			"-f best",
@@ -27,9 +28,10 @@ class Command {
 		return cl;
 	}
 
+
 	Command(String playlistID) throws MalformedURLException {
 		URL url = new URL("https://www.youtube.com/playlist?list=" + playlistID);
-		cl = String.format("%s %s --flat-playlist -J \"%s\"", theCommand, theProxyPart, url);
+		cl = String.format("%s \"%s\"", thePlaylistCmd, url);
 	}
 
 	Command(String videoID, int formatIndex, String dirPath, Integer orderIndex, boolean withDate) throws MalformedURLException {
@@ -39,13 +41,13 @@ class Command {
 
 		String orderPart = (orderIndex == null) ? "" : String.format("%03d｜", orderIndex);
 		String datePart = withDate ? "%(upload_date)s｜" : "";
-		String outputPart = String.format("-o \"%s/%s%s.%%(ext)s\"", dirPath, orderPart, datePart);
+		String outputPart = String.format("-o \"%s/%s/%s%s%%(title)s.%%(ext)s\"", theRepoDir, dirPath, orderPart, datePart);
 
-		cl = String.format("%s %s %s \"%s\" %s %s", theCommand, theProxyPart, theSubtitlePart, url, formatPart, outputPart);
+		cl = String.format("%s \"%s\" %s %s", theVideoCmd, url, formatPart, outputPart);
 	}
 
 
-	String[] run(String cl, Charset cs) throws IOException {
+	static String[] runCL(String cl, String cs) throws IOException {
 
 		System.out.println(cl);
 
@@ -61,5 +63,9 @@ class Command {
 		es.close();
 
 		return ans;
+	}
+
+	String[] run() throws IOException {
+		return runCL(cl, theCS);
 	}
 }
