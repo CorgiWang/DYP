@@ -37,7 +37,10 @@ public class DYP {
 		System.out.println();
 		theVideos.writeBack();
 
-		theVideos.runJobs();
-		theVideos.writeBack();
+		boolean done = false;
+		while (!done) {
+			done = theVideos.runJobs();
+			theVideos.writeBack();
+		}
 	}
 }
