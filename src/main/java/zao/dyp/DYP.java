@@ -34,7 +34,7 @@ public class DYP {
 		init(args);
 
 		thePlaylists.runJobs();
-//		theVideos.runJobs();
+		theVideos.runJobs();
 		theVideos.writeBack();
 	}
 }
