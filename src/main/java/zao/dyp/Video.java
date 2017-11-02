@@ -1,8 +1,5 @@
 package zao.dyp;
 
-import java.util.Arrays;
-import java.util.HashSet;
-
 import static zao.dyp.DYP.theVideos;
 
 public class Video extends Job {
@@ -21,13 +18,17 @@ public class Video extends Job {
 		this.cl = cl;
 	}
 
-	private static boolean isDone(String[] res) {
+	private static boolean analyzeResult(String[] res) {
 
-		boolean ans = false;
+		boolean ans = true;
 
-		String[] lines = res[0].split("\\v");
+		String[] lines = res[1].split("\\v");
 		for (String line : lines) {
-			if (line.startsWith("[download] 100% of ")) ans = true;
+			if (!line.toLowerCase().contains("subtitle")) {
+				ans = false;
+				System.out.println(line);
+				break;
+			}
 		}
 
 		return ans;
@@ -38,13 +39,9 @@ public class Video extends Job {
 	public String call() throws Exception {
 		if (!done) {
 			String[] res = Command.runCL(cl, "GBK");
-			synchronized (theVideos.jobs) {
-				done = isDone(res);
-			}
+			done = analyzeResult(res);
 			if (done) {
 				theVideos.writeBack();
-			} else {
-				Command.printResult(res);
 			}
 		}
 		return null;

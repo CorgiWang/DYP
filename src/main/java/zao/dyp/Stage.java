@@ -19,13 +19,11 @@ class Stage<T extends Job> {
 	private static final Gson theGson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
 	private final Integer MX;
-	private final Integer timeout;
 	private final File jsonFile;
 	Collection<T> jobs;
 
-	Stage(int mx, int t, Class<T> jobType, Class<? extends Collection> colType) throws IOException {
+	Stage(int mx, Class<T> jobType, Class<? extends Collection> colType) throws IOException {
 		MX = mx;
-		timeout = t;
 
 		File file = null;
 		String jobTypeName = jobType.getSimpleName();
@@ -70,7 +68,7 @@ class Stage<T extends Job> {
 
 	boolean runJobs() throws InterruptedException {
 		ExecutorService pool = Executors.newFixedThreadPool(MX);
-		List<Future<String>> futures = pool.invokeAll(jobs, timeout, TimeUnit.SECONDS);
+		List<Future<String>> futures = pool.invokeAll(jobs);
 		pool.shutdownNow();
 
 		boolean ans = true;
