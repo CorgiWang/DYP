@@ -70,16 +70,27 @@ class Stage<T extends Job> {
 
 	boolean runJobs() throws InterruptedException {
 		ExecutorService pool = Executors.newFixedThreadPool(MX);
-		pool.invokeAll(jobs, timeout, TimeUnit.SECONDS);
-		boolean ans = pool.isTerminated();
+		List<Future<String>> futures = pool.invokeAll(jobs, timeout, TimeUnit.SECONDS);
 		pool.shutdownNow();
+
+		boolean ans = true;
+		for (Future<String> future : futures) {
+			if (future.isCancelled()) {
+				ans = false;
+				break;
+			}
+		}
 		return ans;
 	}
 
 	void writeBack() throws IOException {
-
-		String json = theGson.toJson(jobs);
-		writeTextFile(json, jsonFile, "UTF-8");
+		String json;
+		synchronized (jobs) {
+			json = theGson.toJson(jobs);
+		}
+		synchronized (jsonFile) {
+			writeTextFile(json, jsonFile, "UTF-8");
+		}
 	}
 }
 

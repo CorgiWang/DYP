@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.lang.Thread.sleep;
 import static zao.dyp.DYP.theVideos;
 
 class Playlist extends Job {

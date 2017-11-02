@@ -47,6 +47,17 @@ class Command {
 	}
 
 
+	static void printResult(String[] res){
+		System.out.println("----------------------------------------------------------------");
+		System.out.println();
+		System.out.println(res[0]);
+		System.out.println();
+		System.out.println("################");
+		System.out.println();
+		System.out.println(res[1]);
+		System.out.println();
+	}
+
 	static String[] runCL(String cl, String cs) throws IOException {
 
 		System.out.println(cl);
