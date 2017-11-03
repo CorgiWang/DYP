@@ -9,8 +9,8 @@ import java.util.Set;
 
 import static zao.dyp.DYP.theJsonParser;
 import static zao.dyp.DYP.theVideos;
-import static zao.dyp.Video.Status.NEW;
-import static zao.dyp.Video.Status.UNABLE;
+import static zao.dyp.Video.Status.READY;
+import static zao.dyp.Video.Status.SHIT;
 
 class Playlist extends Job {
 
@@ -36,8 +36,8 @@ class Playlist extends Job {
 	@Override
 	String genCL() throws MalformedURLException {
 		URL url = new URL("https://www.youtube.com/playlist?list=" + id);
-		String ans = String.format("%s %s --flat-playlist -J \"%s\"", theCommand, theProxyPart, url);
-		return ans;
+		return String.format("%s %s --flat-playlist -J \"%s\"", theCommand, theProxyPart, url);
+
 	}
 
 	@Override
@@ -49,7 +49,7 @@ class Playlist extends Job {
 			JsonObject entry = videoEntries.get(i).getAsJsonObject();
 
 			String videoTitle = entry.get("title").getAsString();
-			Video.Status status = theBadTitles.contains(videoTitle) ? UNABLE : NEW;
+			Video.Status status = theBadTitles.contains(videoTitle) ? SHIT : READY;
 
 			String videoID = entry.get("id").getAsString();
 			Integer idx = (reverse == null) ? null : (reverse ? size - i : i + 1);

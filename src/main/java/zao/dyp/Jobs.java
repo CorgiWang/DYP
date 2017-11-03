@@ -27,7 +27,7 @@ abstract class Jobs<T extends Job> extends HashMap<Integer, T> {
 		put(job.hashCode(), job);
 	}
 
-	void addAll(Collection<T> jobs) {
+	private void addAll(Collection<T> jobs) {
 		for (T job : jobs) {
 			add(job);
 		}
@@ -37,7 +37,7 @@ abstract class Jobs<T extends Job> extends HashMap<Integer, T> {
 		return containsValue(job);
 	}
 
-	void load(File jsonFile, Class<T[]> jobArrayType) throws IOException {
+	private void load(File jsonFile, Class<T[]> jobArrayType) throws IOException {
 
 		if (jsonFile.exists()) {
 			String json = readTextFile(jsonFile, "UTF-8");

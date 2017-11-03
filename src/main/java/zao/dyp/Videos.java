@@ -9,8 +9,4 @@ class Videos extends Jobs<Video> {
 		super(jsonFile, Video[].class);
 	}
 
-	@Override
-	Object run() throws InterruptedException {
-		return super.run();
-	}
 }

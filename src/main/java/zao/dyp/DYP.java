@@ -9,7 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class DYP {
+class DYP {
 
 	private static class Conf {
 		private String theRepoDirPath;

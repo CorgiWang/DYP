@@ -10,8 +10,4 @@ class Playlists extends Jobs<Playlist> {
 		super(jsonFile, Playlist[].class);
 	}
 
-	@Override
-	Object run() throws InterruptedException {
-		return super.run();
-	}
 }

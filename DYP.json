@@ -5,6 +5,6 @@
 	"theCommand": "youtube-dl.exe",
 	"theProxy": "localhost:1080",
 	"theLanguages": "zh-CN,zh-TW,en",
-	"MX": 4,
+	"MX": 8,
 	"needUpdate": true
 }

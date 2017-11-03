@@ -18,8 +18,7 @@ abstract class Job implements Callable<Object> {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		if (hashCode() != o.hashCode()) return false;
-		return (id == ((Job) o).id);
+		return (hashCode() == o.hashCode()) && ((Job) o).id.equals(id);
 	}
 
 	@Override

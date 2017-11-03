@@ -7,15 +7,14 @@ import java.net.URL;
 
 import static zao.dyp.DYP.*;
 import static zao.dyp.Video.Status.DONE;
-import static zao.dyp.Video.Status.OK;
+import static zao.dyp.Video.Status.READY;
 
 class Video extends Job {
 
 	enum Status {
-		NEW,
-		OK,
+		READY,
 		DONE,
-		UNABLE
+		SHIT
 	}
 
 	private static final String[] theFormats = {
@@ -24,10 +23,10 @@ class Video extends Job {
 			"-f bestvideo+bestaudio --merge-output-format mkv"
 	};
 
-	Integer owner;
-	Integer idx;
-	Status status;
-	String fileName;
+	private final Integer owner;
+	private Integer idx;
+	private Status status;
+	private String fileName;
 
 	Video(String id, Integer owner, Integer idx, Status status) {
 		this.id = id;
@@ -53,8 +52,7 @@ class Video extends Job {
 		String output = String.format("-o \"%s/%s/%s%s%%(title)s.%%(ext)s\"", theRepoDir, playlist.dirName, idxPart, datePart);
 		String formatPart = theFormats[playlist.formatLv];
 
-		String ans = String.format("%s %s --no-part %s %s %s %s", theCommand, theProxyPart, theSubtitlePart, url, output, formatPart);
-		return ans;
+		return String.format("%s %s --no-part %s %s %s %s", theCommand, theProxyPart, theSubtitlePart, url, output, formatPart);
 	}
 
 	@Override
@@ -69,9 +67,11 @@ class Video extends Job {
 				} else {
 					System.out.printf("WTF! Where is %s ?!", fileName);
 				}
-			case NEW:
-			case OK:
-				status = OK;
+			case READY:
+				synchronized (theVideos) {
+					status = READY;
+					theVideos.save(theVideosJsonFile);
+				}
 				String[] res = (String[]) super.call();
 				updateInfo(res);
 				break;
@@ -94,7 +94,7 @@ class Video extends Job {
 				status = DONE;
 				theVideos.save(theVideosJsonFile);
 			}
-			System.out.println("Done: " + fileName);
+			System.out.printf("Done: \"%s\"\n\n", fileName);
 		} else {
 			printResult(res);
 		}
@@ -102,6 +102,43 @@ class Video extends Job {
 
 	private String parseFinaName(String[] res) {
 
-		return null;
+		String ans = null;
+		Playlist playlist = thePlaylists.get(owner);
+		String[] lines = res[0].split("\\v");
+
+		switch (playlist.formatLv) {
+			case 1:
+				for (String line : lines) {
+					if (line.startsWith("[download] Destination: ")) {
+						String path = line.substring(24);
+						ans = new File(path).getName();
+						break;
+					}
+					if (line.endsWith(" has already been downloaded")) {
+						String path = line.substring(11, line.length() - 28);
+						ans = new File(path).getName();
+						break;
+					}
+				}
+				break;
+			case 2:
+				for (String line : lines) {
+					if (line.startsWith("[ffmpeg] Merging formats into ")) {
+						String path = line.substring(31, line.length() - 1);
+						ans = new File(path).getName();
+						break;
+					}
+					if (line.endsWith(" has already been downloaded and merged")) {
+						String path = line.substring(11, line.length() - 39);
+						ans = new File(path).getName();
+						break;
+					}
+				}
+				break;
+		}
+
+		if (ans == null)
+			ans = Integer.toString(hashCode());
+		return ans;
 	}
 }
