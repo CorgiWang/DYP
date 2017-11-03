@@ -1,13 +1,27 @@
 package zao.dyp;
 
-import java.io.*;
-import java.util.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class DYP {
 
-	static File theRepoDir = null;
-	static Stage<Video> theVideos = null;
-	static Stage<Playlist> thePlaylists = null;
+	static final Gson theGson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	static final JsonParser theJsonParser = new JsonParser();
+
+	static File theRepoDir;
+	static File thePlaylistsJsonFile;
+	static File theVideosJsonFile;
+
+
+	static Playlists thePlaylists;
+	static Videos theVideos;
+
 
 	static String readTextFile(File textFile, String cs) throws IOException {
 		FileInputStream fis = new FileInputStream(textFile);
@@ -22,22 +36,43 @@ public class DYP {
 		fos.close();
 	}
 
-	private static void init(String[] args) throws IOException {
-		int mx = (args.length < 1) ? 4 : Integer.valueOf(args[0]);
-		theRepoDir = new File((args.length < 2) ? "D:/_Stream/_from YouTube/" : args[1]);
-		theVideos = new Stage<>(mx, Video.class, Set.class);
-		thePlaylists = new Stage<>(mx, Playlist.class, List.class);
+
+	private static void init(File dypJsonFile) throws IOException {
+
+		class Conf {
+			String theRepoDirPath;
+			String thePlaylistsJsonFileName;
+			String theVideosJsonFileName;
+			String theCommand;
+			String theProxy;
+			String theLanguages;
+			Integer MX;
+		}
+
+		Conf conf = theGson.fromJson(readTextFile(dypJsonFile, "UTF-8"), Conf.class);
+
+		theRepoDir = new File(conf.theRepoDirPath);
+		thePlaylistsJsonFile = new File(theRepoDir, conf.thePlaylistsJsonFileName);
+		theVideosJsonFile = new File(theRepoDir, conf.theVideosJsonFileName);
+
+		Job.theCommand = conf.theCommand;
+		Job.theProxyPart = (conf.theProxy == null) ? "" : ("--proxy " + conf.theProxy);
+		Job.theSubtitlePart = (conf.theLanguages == null) ? "" : ("--embed-subs --write-sub --sub-lang " + conf.theLanguages);
+
+		Jobs.MX = conf.MX;
 	}
 
-
 	public static void main(String[] args) throws IOException, InterruptedException {
+		{
+			File dypJsonFile = new File((0 == args.length) ? "DYP.json" : args[0]);
+			init(dypJsonFile);
+		}
 
-		init(args);
+		{
+			thePlaylists = new Playlists(thePlaylistsJsonFile);
+			theVideos = new Videos(theVideosJsonFile);
+		}
 
-		thePlaylists.runJobs();
-		System.out.println();
-		theVideos.writeBack();
 
-		while (!theVideos.runJobs()) ;
 	}
 }
