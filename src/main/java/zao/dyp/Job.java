@@ -61,8 +61,11 @@ abstract class Job implements Callable<Object> {
 	void printResult(String[] res) {
 		System.out.println();
 		System.out.printf("----------------    %d    ----------------", hashCode());
-		System.out.println(res[1]);
 		System.out.println();
+		System.out.println(res[0]);
+		System.out.println();
+		System.out.println();
+		System.out.println(res[1]);
 		System.out.println();
 	}
 }
