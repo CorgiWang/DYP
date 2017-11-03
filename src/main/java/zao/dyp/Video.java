@@ -65,7 +65,7 @@ class Video extends Job {
 				if (file.exists()) {
 					break;
 				} else {
-					System.out.printf("WTF! Where is %s ?!", fileName);
+					System.out.printf("WTF! Where is \"%s\"  ???\n\n", fileName);
 				}
 			case READY:
 				synchronized (theVideos) {
@@ -83,10 +83,11 @@ class Video extends Job {
 		boolean ok = true;
 		String[] errorLines = res[1].split("\\v");
 		for (String errorLine : errorLines) {
-			if (!errorLine.toLowerCase().contains("subtitle")) {
-				ok = false;
-				break;
-			}
+			if (!errorLine.isEmpty())
+				if (!errorLine.toLowerCase().contains("subtitle")) {
+					ok = false;
+					break;
+				}
 		}
 		if (ok) {
 			synchronized (theVideos) {
