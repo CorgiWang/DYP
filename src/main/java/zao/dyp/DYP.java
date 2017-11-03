@@ -11,7 +11,18 @@ import java.io.IOException;
 
 public class DYP {
 
-	static final Gson theGson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+	private static class Conf {
+		private String theRepoDirPath;
+		private String thePlaylistsJsonFileName;
+		private String theVideosJsonFileName;
+		private String theCommand;
+		private String theProxy;
+		private String theLanguages;
+		private Integer MX;
+		private boolean needUpdate;
+	}
+
+	static final Gson theGson = new GsonBuilder().setLenient().setPrettyPrinting().disableHtmlEscaping().create();
 	static final JsonParser theJsonParser = new JsonParser();
 
 	static File theRepoDir;
@@ -21,6 +32,8 @@ public class DYP {
 
 	static Playlists thePlaylists;
 	static Videos theVideos;
+
+	private static boolean needUpdate;
 
 
 	static String readTextFile(File textFile, String cs) throws IOException {
@@ -39,17 +52,8 @@ public class DYP {
 
 	private static void init(File dypJsonFile) throws IOException {
 
-		class Conf {
-			String theRepoDirPath;
-			String thePlaylistsJsonFileName;
-			String theVideosJsonFileName;
-			String theCommand;
-			String theProxy;
-			String theLanguages;
-			Integer MX;
-		}
-
-		Conf conf = theGson.fromJson(readTextFile(dypJsonFile, "UTF-8"), Conf.class);
+		String json = readTextFile(dypJsonFile, "UTF-8");
+		Conf conf = theGson.fromJson(json, Conf.class);
 
 		theRepoDir = new File(conf.theRepoDirPath);
 		thePlaylistsJsonFile = new File(theRepoDir, conf.thePlaylistsJsonFileName);
@@ -60,18 +64,26 @@ public class DYP {
 		Job.theSubtitlePart = (conf.theLanguages == null) ? "" : ("--embed-subs --write-sub --sub-lang " + conf.theLanguages);
 
 		Jobs.MX = conf.MX;
+
+		needUpdate = conf.needUpdate;
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		{
 			File dypJsonFile = new File((0 == args.length) ? "DYP.json" : args[0]);
 			init(dypJsonFile);
+
+			theVideos = new Videos(theVideosJsonFile);
+			thePlaylists = new Playlists(thePlaylistsJsonFile);
 		}
 
-		{
-			thePlaylists = new Playlists(thePlaylistsJsonFile);
-			theVideos = new Videos(theVideosJsonFile);
+		if (needUpdate) {
+			thePlaylists.run();
+			thePlaylists.save(thePlaylistsJsonFile);
+			theVideos.save(theVideosJsonFile);
 		}
+
+		theVideos.run();
 
 
 	}
