@@ -2,6 +2,7 @@ package zao.dyp;
 
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -25,7 +26,7 @@ class Video extends Job {
 
 	private final Integer owner;
 	private Status status;
-	private String fileName;
+	private String filePath;
 
 	private Playlist myPlaylist() {
 		return thePlaylists.get(owner);
@@ -36,9 +37,9 @@ class Video extends Job {
 		this.owner = owner;
 		this.status = status;
 
-		String idxPart = (idx == null) ? "" : String.format("%03d｜");
+		String idxPart = (idx == null) ? "" : String.format("%03d｜",idx);
 		String datePart = myPlaylist().withDate ? "%%(upload_date)s｜" : "";
-		fileName = String.format("%s%s%%(title)s.%%(ext)s", idxPart, datePart);
+		filePath = String.format("%s/%s/%s%s%%(title)s.%%(ext)s", theRepoDir, myPlaylist().dirName, idxPart, datePart);
 	}
 
 	@Override
@@ -50,7 +51,7 @@ class Video extends Job {
 	private String genCL() throws MalformedURLException {
 
 		URL url = new URL("https://www.youtube.com/watch?v=" + id);
-		String output = String.format("-o \"%s/%s/%s\"", theRepoDir, thePlaylists.get(owner).dirName, fileName);
+		String output = String.format("-o \"%s\"", filePath);
 		String formatPart = theFormats[myPlaylist().formatLv];
 		return String.format("%s %s --no-part --print-json %s %s %s %s", theCommand, theProxyPart, theSubtitlePart, url, output, formatPart);
 	}
@@ -63,19 +64,33 @@ class Video extends Job {
 				String cl = genCL();
 				String[] res = runCL(cl, true);
 
-				if (analyzeResult(res) == 0) {
-					JsonObject info = theJsonParser.parse(res[0]).getAsJsonObject();
-					fileName = info.get("_filename").getAsString();
-					theVideos.save(theVideosJsonFile);
-					status = DONE;
-				} else {
-					System.out.println(res[1]);
+				switch (analyzeResult(res)) {
+					case 0:
+						JsonObject info = theJsonParser.parse(res[0]).getAsJsonObject();
+						filePath = info.get("_filename").getAsString();
+						theVideos.save(theVideosJsonFile);
+						status = DONE;
+						break;
+					case 1:
+						status = SHIT;
+						break;
+					default:
+						System.out.println(res[1]);
 				}
+
 				continue;
 			}
 			if (status == DONE) {
-				System.out.printf("\n[DONE]  %s  \"%s\\%s\"\n", id, thePlaylists.get(owner).dirName, fileName);
-				ok = true;
+
+				if (new File(filePath).exists()) {
+					System.out.printf("\n[DONE]  %s  \"%s\"\n", id, filePath);
+					ok = true;
+				} else {
+					System.out.printf("\n[File Lost]  %s  \"%s\"\n", id, filePath);
+					status = READY;
+				}
+
+
 				continue;
 			}
 			if (status == SHIT) {
@@ -87,18 +102,21 @@ class Video extends Job {
 	}
 
 	private static int analyzeResult(String[] res) {
-		if (!res[1].isEmpty()) {
+		if (res[1].contains("This video contains content from")) {
 			return 1;
+		}
+		if (!res[1].isEmpty()) {
+			return -1;
 		}
 		return 0;
 	}
 
 
-	private static String fixTitle(String oriTitle) {
-		String ans = oriTitle;
-		ans = ans.replaceAll("/", "_");
-		ans = ans.replaceAll("\"", "`");
-		return ans;
-	}
+//	private static String fixTitle(String oriTitle) {
+//		String ans = oriTitle;
+//		ans = ans.replaceAll("/", "_");
+//		ans = ans.replaceAll("\"", "`");
+//		return ans;
+//	}
 
 }

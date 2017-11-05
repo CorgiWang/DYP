@@ -43,7 +43,7 @@ class Playlist extends Job {
 	public Object call() throws Exception {
 
 		if (!disabled) {
-			String[] res = runCL(genCL(), false);
+			String[] res = runCL(genCL(), true);
 			JsonArray videoEntries = theJsonParser.parse(res[0]).getAsJsonObject().getAsJsonArray("entries");
 
 			int size = videoEntries.size();
