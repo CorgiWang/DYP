@@ -1,7 +1,7 @@
 package zao.dyp;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.util.concurrent.Callable;
 
 abstract class Job implements Callable<Object> {
@@ -35,15 +35,11 @@ abstract class Job implements Callable<Object> {
 
 	abstract int calcHashCode();
 
-	abstract String genCL() throws MalformedURLException;
+	static String[] runCL(String cl, boolean display) throws IOException {
 
-	@Override
-	public Object call() throws Exception {
+		if (display) System.out.printf("\n%s\n", cl);
 
-		String cl = genCL();
-		System.out.println(cl + '\n');
-
-		Process p = theRT.exec(genCL());
+		Process p = theRT.exec(cl);
 		String[] ans = new String[2];
 		String csName = "GBK";
 
@@ -58,14 +54,16 @@ abstract class Job implements Callable<Object> {
 		return ans;
 	}
 
-	void printResult(String[] res) {
+	static void printResult(String[] res) {
 		System.out.println();
-		System.out.printf("----------------    %d    ----------------", hashCode());
+		System.out.println("================================================================");
 		System.out.println();
 		System.out.println(res[0]);
 		System.out.println();
+		System.out.println("                --------------------------------                ");
 		System.out.println();
 		System.out.println(res[1]);
 		System.out.println();
+		System.out.println("================================================================");
 	}
 }

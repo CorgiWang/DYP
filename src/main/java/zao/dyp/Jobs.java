@@ -37,6 +37,7 @@ abstract class Jobs<T extends Job> extends HashMap<Integer, T> {
 		return containsValue(job);
 	}
 
+
 	private void load(File jsonFile, Class<T[]> jobArrayType) throws IOException {
 
 		if (jsonFile.exists()) {
@@ -49,7 +50,7 @@ abstract class Jobs<T extends Job> extends HashMap<Integer, T> {
 		}
 	}
 
-	void save(File jsonFile) throws IOException {
+	synchronized void save(File jsonFile) throws IOException {
 		String json = theGson.toJson(this.values());
 		writeTextFile(json, jsonFile, "UTF-8");
 	}

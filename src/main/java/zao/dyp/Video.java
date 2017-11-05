@@ -1,145 +1,165 @@
 package zao.dyp;
 
-import java.io.File;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
 import static zao.dyp.DYP.*;
-import static zao.dyp.Video.Status.DONE;
-import static zao.dyp.Video.Status.READY;
+import static zao.dyp.Video.Status.*;
 
 class Video extends Job {
 
 	enum Status {
+		NEW,
 		READY,
+		ERROR,
 		DONE,
-		SHIT
+		SHIT,
 	}
 
-	private static final String[] theFormats = {
-			"",
-			"-f best",
-			"-f bestvideo+bestaudio --merge-output-format mkv"
-	};
+	final Integer owner;
+	final Integer idx;
+	Status status;
+	String fileName;
+	List<Integer> formatIDs;
 
-	private final Integer owner;
-	private Integer idx;
-	private Status status;
-	private String fileName;
-
-	Video(String id, Integer owner, Integer idx, Status status) {
+	Video(String id, Integer owner, Integer idx) {
 		this.id = id;
 		this.owner = owner;
 		this.idx = idx;
-		this.status = status;
 	}
-
 
 	@Override
 	int calcHashCode() {
 		return 127 * owner + id.hashCode();
 	}
 
-	@Override
-	String genCL() throws MalformedURLException {
-
-		Playlist playlist = thePlaylists.get(owner);
-
-		String idxPart = (idx == null) ? "" : String.format("%03d｜", idx);
-		String datePart = (playlist.withDate) ? "%(upload_date)s｜" : "";
+	private String genCL_New() throws MalformedURLException {
 		URL url = new URL("https://www.youtube.com/watch?v=" + id);
-		String output = String.format("-o \"%s/%s/%s%s%%(title)s.%%(ext)s\"", theRepoDir, playlist.dirName, idxPart, datePart);
-		String formatPart = theFormats[playlist.formatLv];
-
-		return String.format("%s %s --no-part %s %s %s %s", theCommand, theProxyPart, theSubtitlePart, url, output, formatPart);
+		return String.format("%s %s %s --print-json --skip-download", theCommand, theProxyPart, url);
 	}
 
-	@Override
-	public Object call() throws Exception {
-		Playlist playlist = thePlaylists.get(owner);
-		File playlistsDir = new File(theRepoDir, playlist.dirName);
-		switch (status) {
-			case DONE:
-				File file = new File(playlistsDir, fileName);
-				if (file.exists()) {
-					break;
-				} else {
-					System.out.printf("WTF! Where is \"%s\"  ???\n\n", fileName);
-				}
-			case READY:
-				synchronized (theVideos) {
-					status = READY;
-					theVideos.save(theVideosJsonFile);
-				}
-				String[] res = (String[]) super.call();
-				updateInfo(res);
-				break;
-		}
-		return null;
-	}
+	private String genCL_Ready() throws MalformedURLException {
 
-	private void updateInfo(String[] res) throws IOException {
-		boolean ok = true;
-		String[] errorLines = res[1].split("\\v");
-		for (String errorLine : errorLines) {
-			if (!errorLine.isEmpty())
-				if (!errorLine.toLowerCase().contains("subtitle")) {
-					ok = false;
-					break;
-				}
-		}
-		if (ok) {
-			synchronized (theVideos) {
-				fileName = parseFinaName(res);
-				status = DONE;
-				theVideos.save(theVideosJsonFile);
-			}
-			System.out.printf("Done: \"%s\"\n\n", fileName);
-		} else {
-			printResult(res);
-		}
-	}
-
-	private String parseFinaName(String[] res) {
-
-		String ans = null;
-		Playlist playlist = thePlaylists.get(owner);
-		String[] lines = res[0].split("\\v");
-
-		switch (playlist.formatLv) {
+		URL url = new URL("https://www.youtube.com/watch?v=" + id);
+		String output = String.format("-o \"%s/%s/%s\"", theRepoDir, thePlaylists.get(owner).dirName, fileName);
+		String formatPart = "";
+		switch (formatIDs.size()) {
 			case 1:
-				for (String line : lines) {
-					if (line.startsWith("[download] Destination: ")) {
-						String path = line.substring(24);
-						ans = new File(path).getName();
-						break;
-					}
-					if (line.endsWith(" has already been downloaded")) {
-						String path = line.substring(11, line.length() - 28);
-						ans = new File(path).getName();
-						break;
-					}
-				}
+				formatPart = "-f " + formatIDs.get(0);
 				break;
 			case 2:
-				for (String line : lines) {
-					if (line.startsWith("[ffmpeg] Merging formats into ")) {
-						String path = line.substring(31, line.length() - 1);
-						ans = new File(path).getName();
-						break;
-					}
-					if (line.endsWith(" has already been downloaded and merged")) {
-						String path = line.substring(11, line.length() - 39);
-						ans = new File(path).getName();
-						break;
-					}
-				}
+				formatPart = String.format("-f %d+%d --merge-output-format mkv", formatIDs.get(0), formatIDs.get(1));
 				break;
 		}
+		return String.format("%s %s --no-part --print-json %s %s %s %s", theCommand, theProxyPart, theSubtitlePart, url, output, formatPart);
+	}
 
-		if (ans == null)
-			ans = Integer.toString(hashCode());
+
+	@Override
+	public Object call() throws IOException {
+		String cl;
+		String[] res = new String[2];
+		boolean ok = false;
+		while (!ok) {
+			switch (status) {
+				case NEW:
+					cl = genCL_New();
+					res = runCL(cl, false);
+					if (res[1].isEmpty()) {
+						JsonObject videoInfo = theJsonParser.parse(res[0]).getAsJsonObject();
+
+						String idxPart = (idx == null) ? "" : String.format("%03d｜", idx);
+						String datePart = (thePlaylists.get(owner).withDate) ? videoInfo.get("upload_date").getAsString() + '｜' : "";
+						String titlePart = fixTitle(videoInfo.get("title").getAsString());
+						JsonArray formatJsonArray = videoInfo.getAsJsonArray("formats");
+						String extPart = pickFormats(formatJsonArray);
+						fileName = String.format("%s%s%s.%s", idxPart, datePart, titlePart, extPart);
+
+						status = READY;
+						theVideos.save(theVideosJsonFile);
+					} else {
+						status = ERROR;
+						theVideos.save(theVideosJsonFile);
+						System.out.println("\n[NEW]  WTF !!!");
+						System.out.printf("\n%s\n", cl);
+					}
+					break;
+				case READY:
+					cl = genCL_Ready();
+					res = runCL(cl, false);
+					if (res[1].isEmpty()) {
+						status = DONE;
+						theVideos.save(theVideosJsonFile);
+					} else {
+						status = ERROR;
+						theVideos.save(theVideosJsonFile);
+						System.out.println("\n[READY]  WTF !!!");
+						System.out.printf("\n%s\n", cl);
+					}
+					break;
+				case ERROR:
+					System.out.printf("\n[ERROR]  %s  \"%s\"\n", id, fileName);
+					printResult(res);
+					ok = true;
+					break;
+				case DONE:
+					System.out.printf("\n[DONE]  %s  \"%s\"\n", id, fileName);
+					ok = true;
+					break;
+				case SHIT:
+					ok = true;
+					break;
+				default:
+			}
+		}
+		return status;
+	}
+
+	private String pickFormats(JsonArray formatJsonArray) {
+
+		Format bestVideoFormat = new Format();
+		Format bestAudioFormat = new Format();
+
+		for (JsonElement element : formatJsonArray) {
+			JsonObject entry = element.getAsJsonObject();
+			Format format = theGson.fromJson(entry, Format.class);
+
+			if (format.hasV()) {
+				if (format.compareTo(bestVideoFormat) > 0) {
+					bestVideoFormat = format;
+				}
+			}
+
+			if (format.hasA()) {
+				if (format.compareTo(bestAudioFormat) > 0) {
+					bestAudioFormat = format;
+				}
+			}
+		}
+
+		String ans;
+		if (bestAudioFormat == bestVideoFormat) {
+			formatIDs = List.of(bestVideoFormat.format_id);
+			ans = bestVideoFormat.ext;
+		} else {
+			formatIDs = List.of(bestVideoFormat.format_id, bestAudioFormat.format_id);
+			ans = "mkv";
+		}
+
 		return ans;
 	}
+
+	private static String fixTitle(String oriTitle) {
+		String ans = oriTitle;
+		ans = ans.replaceAll("/", "_");
+		ans = ans.replaceAll("\"", "`");
+		return ans;
+	}
+
 }
