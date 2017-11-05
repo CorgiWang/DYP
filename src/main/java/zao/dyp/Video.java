@@ -38,7 +38,7 @@ class Video extends Job {
 		this.status = status;
 
 		String idxPart = (idx == null) ? "" : String.format("%03d｜",idx);
-		String datePart = myPlaylist().withDate ? "%%(upload_date)s｜" : "";
+		String datePart = myPlaylist().withDate ? "%(upload_date)s｜" : "";
 		filePath = String.format("%s/%s/%s%s%%(title)s.%%(ext)s", theRepoDir, myPlaylist().dirName, idxPart, datePart);
 	}
 
