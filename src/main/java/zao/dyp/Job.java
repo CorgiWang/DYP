@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Callable;
 
+import static java.lang.Thread.sleep;
+
 abstract class Job implements Callable<Object> {
 
 	private static final Runtime theRT = Runtime.getRuntime();
@@ -35,21 +37,30 @@ abstract class Job implements Callable<Object> {
 
 	abstract int calcHashCode();
 
-	static String[] runCL(String cl, boolean display) throws IOException {
+	static String[] runCL(String cl, boolean display) throws IOException, InterruptedException {
 
-		if (display) System.out.printf("\n%s\n", cl);
 
-		Process p = theRT.exec(cl);
 		String[] ans = new String[2];
 		String csName = "GBK";
 
-		InputStream is = p.getInputStream();
-		ans[0] = new String(is.readAllBytes(), csName);
-		is.close();
+		int count = 0;
+		boolean ok = false;
+		while (!ok) {
 
-		InputStream es = p.getErrorStream();
-		ans[1] = new String(es.readAllBytes(), csName);
-		es.close();
+			sleep(5000 * count++);
+			Process p = theRT.exec(cl);
+
+			InputStream is = p.getInputStream();
+			ans[0] = new String(is.readAllBytes(), csName);
+			is.close();
+
+			InputStream es = p.getErrorStream();
+			ans[1] = new String(es.readAllBytes(), csName);
+			es.close();
+
+			ok = !ans[1].contains("<urlopen error EOF occurred in violation of protocol (_ssl.c:600)>");
+		}
+		if (display) System.out.printf("\n[%d]    %s\n", count, cl);
 
 		return ans;
 	}

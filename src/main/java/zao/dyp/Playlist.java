@@ -9,17 +9,18 @@ import java.util.Set;
 
 import static zao.dyp.DYP.theJsonParser;
 import static zao.dyp.DYP.theVideos;
-import static zao.dyp.Video.Status.NEW;
+import static zao.dyp.Video.Status.READY;
 import static zao.dyp.Video.Status.SHIT;
 
 class Playlist extends Job {
 
 	private static final Set<String> theBadTitles = Set.of("[Deleted video]", "[Private video]");
 
-	boolean disabled;
+	Boolean disabled = false;
 	String dirName;
 	Boolean reverse;
-	Boolean withDate;
+	Boolean withDate = false;
+	Integer formatLv = 2;
 
 
 	@Override
@@ -28,6 +29,7 @@ class Playlist extends Job {
 		ans = 31 * ans + (dirName == null ? 0 : dirName.hashCode());
 		ans = 31 * ans + (reverse == null ? 0 : reverse.hashCode());
 		ans = 31 * ans + (withDate == null ? 0 : withDate.hashCode());
+		ans = 31 * ans + (formatLv == null ? 0 : formatLv.hashCode());
 		return ans;
 	}
 
@@ -50,11 +52,12 @@ class Playlist extends Job {
 
 				String videoID = entry.get("id").getAsString();
 				Integer idx = (reverse == null) ? null : (reverse ? size - i : i + 1);
-				Video video = new Video(videoID, hashCode(), idx);
+
+				String videoTitle = entry.get("title").getAsString();
+				Video.Status status = (theBadTitles.contains(videoTitle) ? SHIT : READY);
+				Video video = new Video(videoID, hashCode(), status, idx);
 
 				if (!theVideos.contains(video)) {
-					String videoTitle = entry.get("title").getAsString();
-					video.status = (theBadTitles.contains(videoTitle) ? SHIT : NEW);
 					synchronized (theVideos) {
 						theVideos.add(video);
 					}

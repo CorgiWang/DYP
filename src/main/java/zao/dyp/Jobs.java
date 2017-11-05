@@ -58,7 +58,7 @@ abstract class Jobs<T extends Job> extends HashMap<Integer, T> {
 	Object run() throws InterruptedException {
 		ExecutorService pool = Executors.newFixedThreadPool(MX);
 		List<Future<Object>> ans = pool.invokeAll(this.values());
-		pool.shutdownNow();
+		pool.shutdown();
 		return ans;
 	}
 }
